@@ -1,0 +1,9 @@
+type User {
+    id: ID!
+    name: String!
+    books:[Book!]!
+}
+
+input CreateUserInput {
+    name: String!
+}

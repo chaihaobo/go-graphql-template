@@ -1,0 +1,11 @@
+type Book {
+    id: ID!
+    title: String!
+    author: String!
+}
+
+input CreateBookInput {
+    userID: String!
+    title: String!
+    author: String!
+}

@@ -1,0 +1,5 @@
+type Mutation {
+    createUser(input: CreateUserInput!): User!
+    createBook(input: CreateBookInput!): Book!
+}
+
