@@ -25,7 +25,6 @@ import (
 
 // content holds all the SDL file content.
 //
-//go:embed *.graphql type/*.grap
 //go:embed *.graphql type/*.graphql
 var content embed.FS
 
