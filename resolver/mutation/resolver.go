@@ -16,17 +16,24 @@ type (
 		CreateBook(ctx context.Context, args *booktype.CreateBookArgs) (book.Resolver, error)
 	}
 	resolver struct {
+		userCreatedChan chan<- user.Resolver
 	}
 )
 
 func (r resolver) CreateUser(ctx context.Context, args *usertype.CreateUserArgs) (user.Resolver, error) {
-	return user.NewResolver(store.CreateUser(args.Input.Name)), nil
+	userResolver := user.NewResolver(store.CreateUser(args.Input.Name))
+	defer func() {
+		go func() {
+			r.userCreatedChan <- userResolver
+		}()
+	}()
+	return userResolver, nil
 }
 
 func (r resolver) CreateBook(ctx context.Context, args *booktype.CreateBookArgs) (book.Resolver, error) {
 	return book.NewResolver(store.CreateBook(args.Input.Author, args.Input.Title, args.Input.UserID)), nil
 }
 
-func NewResolver() MResolver {
-	return resolver{}
+func NewResolver(userCreatedChan chan<- user.Resolver) MResolver {
+	return resolver{userCreatedChan: userCreatedChan}
 }

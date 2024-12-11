@@ -7,6 +7,7 @@ import (
 
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
+	"github.com/graph-gophers/graphql-transport-ws/graphqlws"
 
 	"github.com/chaihaobo/go-graphql-template/resolver"
 	"github.com/chaihaobo/go-graphql-template/schema"
@@ -29,16 +30,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("reading embedded schema contents: %s", err)
 	}
-	h := &relay.Handler{
-		Schema: graphql.MustParseSchema(s, rootResolver),
-	}
+	schema := graphql.MustParseSchema(s, rootResolver)
 	// Register handlers to routes.
 	mux := http.NewServeMux()
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write(page)
 	}))
-	mux.Handle("/graphql/", h)
-	mux.Handle("/graphql", h) // Register without a trailing slash to avoid redirect.
+	graphQLHandler := graphqlws.NewHandlerFunc(schema, &relay.Handler{Schema: schema})
+	mux.Handle("/graphql/", graphQLHandler)
+	mux.Handle("/graphql", graphQLHandler) // Register without a trailing slash to avoid redirect.
 
 	// Configure the HTTP server.
 	srv := &http.Server{
@@ -85,10 +85,16 @@ var page = []byte(`
   <body>
     <div id="graphiql">Loading...</div>
     <script src="https://unpkg.com/graphiql@2.3.0/graphiql.min.js" type="application/javascript"></script>
+	<script src="https://cdn.jsdelivr.net/npm/subscriptions-transport-ws@0.11.0/browser/client.js"></script>
     <script>
+	const wsClient = new window.SubscriptionsTransportWs.SubscriptionClient(
+      'ws://localhost:8000/graphql',
+      { reconnect: true }
+    );
       ReactDOM.render(
         React.createElement(GraphiQL, {
-          fetcher: GraphiQL.createFetcher({url: '/graphql'}),
+          //fetcher: GraphiQL.createFetcher({url: '/graphql',subscriptionUrl:'ws://localhost:8000/graphql', protocol: "graphql-ws",legacyClient:wsClient}),
+          fetcher: GraphiQL.createFetcher({url: '/graphql',legacyClient:wsClient}),
           defaultEditorToolsVisibility: true,
         }),
         document.getElementById('graphiql'),
